@@ -1,3 +1,8 @@
 # Python cache
 __pycache__/
 *.pyc
+
+# Ignore CSV and HTML files for submissions and curl responses
+submissions.csv
+curl_response.html
+
