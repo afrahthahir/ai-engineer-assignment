@@ -34,7 +34,7 @@ COMPILED_RANKS = [(re.compile(pattern, re.IGNORECASE), score) for pattern, score
 WEIGHT_EMBEDDING_SIMILARITY = 1.0
 WEIGHT_COMMON_NEIGHBORS = 1.0
 WEIGHT_SENIORITY_GAP = 1.0
-WEIGHT_LOCATION_MATCH = 0.0
+WEIGHT_LOCATION_MATCH = 1.0
 
 
 def create_embeddings(model, texts):
