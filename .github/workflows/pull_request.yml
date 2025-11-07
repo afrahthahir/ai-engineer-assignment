@@ -33,7 +33,9 @@ jobs:
         # Install 'bc' for floating-point math (required for speed comparison)
         sudo apt-get update 
         sudo apt-get install -y bc
-        pip install -r requirements.txt gunicorn
+        # Use the CPU index for PyTorch to avoid installing large CUDA packages 
+        # and speed up the CI run environment.
+        pip install -r requirements.txt gunicorn --extra-index-url https://download.pytorch.org/whl/cpu
 
     - name: Download Data
       run: |
