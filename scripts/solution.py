@@ -8,6 +8,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 import argparse
 import plotly.graph_objects as go
 
+print("Loading SentenceTransformer model...")
+MODEL = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+
 print("--- Manager Prediction using Hybrid Scoring (Embeddings + Graph Features) ---")
 
 # --- GLOBAL OPTIMIZATION 1: COMPILED REGEX FOR SENIORITY ---
@@ -28,8 +31,7 @@ WEIGHT_COMMON_NEIGHBORS = 1.0
 WEIGHT_SENIORITY_GAP = 1.0
 WEIGHT_LOCATION_MATCH = 0.0
 
-print("Loading SentenceTransformer model...")
-MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+
 
 # --- 2. DATA LOADING ---
 def load_data(employees_path, connections_path):
@@ -70,7 +72,7 @@ def build_graph_with_features(employees_df, connections_df):
     # --- Optimization 2: Batch Encoding ---
     texts = employees_df['combined_text'].tolist()
     # Batch encoding is significantly faster
-    embeddings = MODEL.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+    embeddings = MODEL.encode(texts, show_progress_bar=False, convert_to_numpy=True)
     # Create dictionary mapping employee ID to its 1D embedding array
     embedding_dict = dict(zip(employees_df['employee_id'], embeddings))
 
@@ -159,7 +161,7 @@ def score_potential_managers(employee_id, G):
 def predict_managers_globally(G):
     all_possible_pairs = []
     print("Step 3: Scoring all possible employee-manager pairs...")
-    for emp_id in tqdm(G.nodes(), desc="Scoring Progress"):
+    for emp_id in tqdm(G.nodes(), desc="Scoring Progress", disable=True):
         all_possible_pairs.extend(score_potential_managers(emp_id, G))
 
     all_possible_pairs.sort(key=lambda x: x[0], reverse=True)
