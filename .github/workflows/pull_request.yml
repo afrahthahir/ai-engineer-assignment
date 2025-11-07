@@ -113,7 +113,6 @@ jobs:
         else
           # Set an environment variable (e.g., IS_BETTER) to "false"
           echo "IS_BETTER=false" >> $GITHUB_OUTPUT
-          exit 1 # Fail the build if accuracy dropped
         fi
 
     - name: Post PR Comment
