@@ -3,7 +3,7 @@
 # Installs dependencies using PyTorch's CPU wheels index for speed/size.
 # This layer is cached and is only rebuilt if requirements.txt changes.
 # ----------------------------------------------------------------------
-FROM python:3.10-slim-buster AS builder
+FROM python:3.10-slim-bullseye AS builder
 
 # Install necessary build tools (like build-essential for compiling wheels) and git.
 RUN apt-get update && \
@@ -32,7 +32,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # STAGE 2: RUNNER (Final, minimal image)
 # Copies only the necessary files for deployment to create a minimal image.
 # ----------------------------------------------------------------------
-FROM python:3.10-slim-buster AS runner
+FROM python:3.10-slim-bullseye AS runner
 
 WORKDIR /app
 
