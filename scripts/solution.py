@@ -7,6 +7,14 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import argparse
 import plotly.graph_objects as go
+import multiprocessing
+import torch # <-- Make sure torch is imported
+import os
+
+# --- Configuration ---
+# Set the number of processes equal to the number of CPU cores for max parallelization
+NUM_PROCESSES = os.cpu_count() or 8 
+print(f"INFO: Using {NUM_PROCESSES} processes for parallel embedding.")
 
 print("--- Manager Prediction using Hybrid Scoring (Embeddings + Graph Features) ---")
 
@@ -27,6 +35,30 @@ WEIGHT_EMBEDDING_SIMILARITY = 1.0
 WEIGHT_COMMON_NEIGHBORS = 1.0
 WEIGHT_SENIORITY_GAP = 1.0
 WEIGHT_LOCATION_MATCH = 0.0
+
+
+def create_embeddings(model, texts):
+    """
+    Generates sentence embeddings using parallel processing for speed.
+    This is the CRITICAL optimization step.
+    """
+    print("Generating text embeddings (Optimized with Parallelization)...")
+    
+    # Start the multi-process pool, assigning each process to a CPU core.
+    pool = model.start_multi_process_pool(target_devices=[f'cpu:{i}' for i in range(NUM_PROCESSES)])
+    
+    # Generate embeddings using the parallel pool
+    embeddings = model.encode_multi_process(
+        texts, 
+        pool, 
+        convert_to_tensor=True,
+        show_progress_bar=True
+    )
+    
+    # Stop the pool and join the processes
+    model.stop_multi_process_pool(pool)
+    
+    return embeddings.cpu().numpy()
 
 # --- 2. DATA LOADING ---
 def load_data(employees_path, connections_path):
@@ -63,12 +95,12 @@ def build_graph_with_features(employees_df, connections_df):
     print("Generating text embeddings (Optimized with Batching)...")
     
     employees_df['combined_text'] = employees_df['job_title_current'].fillna('') + ". " + employees_df['profile_summary'].fillna('')
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    model = SentenceTransformer('all-MiniLM-L6-v2', device=torch.device('cpu'))
 
     # --- Optimization 2: Batch Encoding ---
     texts = employees_df['combined_text'].tolist()
     # Batch encoding is significantly faster
-    embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+    embeddings = create_embeddings(model, texts)
     # Create dictionary mapping employee ID to its 1D embedding array
     embedding_dict = dict(zip(employees_df['employee_id'], embeddings))
 
