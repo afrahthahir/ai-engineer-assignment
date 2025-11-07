@@ -1,38 +1,49 @@
 # ----------------------------------------------------------------------
-# STAGE 1: Dependency Installation & Setup
+# STAGE 1: BUILDER
+# Installs dependencies using PyTorch's CPU wheels index for speed/size.
+# This layer is cached and is only rebuilt if requirements.txt changes.
 # ----------------------------------------------------------------------
+FROM python:3.10-slim-buster AS builder
 
-# TODO: Use an official Python runtime as a parent image
-FROM python:3.10-slim AS base
-
-# Install system dependencies needed for some Python packages
+# Install necessary build tools (like build-essential for compiling wheels) and git.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential git \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
     && rm -rf /var/lib/apt/lists/*
 
-# TODO: Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# TODO: Copy the dependencies file to the working directory
+# Copy requirements and install dependencies.
+# KEY FIX: Using --extra-index-url to prioritize PyTorch's CPU wheels index.
+# This drastically reduces the size and time by avoiding the large CUDA libraries.
 COPY requirements.txt .
+RUN pip install --no-cache-dir \
+    -r requirements.txt \
+    gunicorn \
+    --extra-index-url https://download.pytorch.org/whl/cpu
 
-# TODO: Install any needed packages specified in requirements.txt
-# Install dependencies, including gunicorn for production serving
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
-
-# This prevents the server from crashing on the first request due to model download/load failure, by caching the model
+# Explicitly download and cache the ML model for the runner stage.
+# This prevents the server from crashing or hanging on the first request.
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-# ----------------------------------------------------------------------
-# STAGE 2: Application Setup and Execution
-# ----------------------------------------------------------------------
 
-# Copy application source code (serving, scripts, and data)
-# TODO: Copy the rest of the application's code
+
+# ----------------------------------------------------------------------
+# STAGE 2: RUNNER (Final, minimal image)
+# Copies only the necessary files for deployment to create a minimal image.
+# ----------------------------------------------------------------------
+FROM python:3.10-slim-buster AS runner
+
+WORKDIR /app
+
+# Copy installed Python site-packages from the builder stage
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+
+# Copy the rest of the application code, data, and cached model files
 COPY . .
 
-# Expose the port the server runs on
+# Set up the network port
 EXPOSE 5001
 
-# TODO: Command to run the application
-# Use Gunicorn to run the optimized Flask app in a production environment
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "3", "serving.serve:app"]
+# Use gunicorn as the production-ready server
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "serving.serve:app"]
