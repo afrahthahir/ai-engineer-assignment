@@ -28,6 +28,9 @@ WEIGHT_COMMON_NEIGHBORS = 1.0
 WEIGHT_SENIORITY_GAP = 1.0
 WEIGHT_LOCATION_MATCH = 0.0
 
+print("Loading SentenceTransformer model...")
+MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+
 # --- 2. DATA LOADING ---
 def load_data(employees_path, connections_path):
     """Loads employee and connection data."""
@@ -63,12 +66,11 @@ def build_graph_with_features(employees_df, connections_df):
     print("Generating text embeddings (Optimized with Batching)...")
     
     employees_df['combined_text'] = employees_df['job_title_current'].fillna('') + ". " + employees_df['profile_summary'].fillna('')
-    model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # --- Optimization 2: Batch Encoding ---
     texts = employees_df['combined_text'].tolist()
     # Batch encoding is significantly faster
-    embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+    embeddings = MODEL.encode(texts, show_progress_bar=True, convert_to_numpy=True)
     # Create dictionary mapping employee ID to its 1D embedding array
     embedding_dict = dict(zip(employees_df['employee_id'], embeddings))
 

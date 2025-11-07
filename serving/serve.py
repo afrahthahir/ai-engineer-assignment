@@ -9,6 +9,10 @@ import pandas as pd
 # Ensure the scripts directory is accessible for importing solution.py
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts')))
 
+# --- IMPORT OPTIMIZED SOLUTION FUNCTIONS ---
+# This is a fast operation and must stay at the top.
+from solution import generate_sunburst_html_in_memory
+
 
 app = Flask(__name__)
 
@@ -20,9 +24,6 @@ def predict():
     Accepts employee and connection data as base64 encoded CSVs,
     runs the hierarchy prediction, and returns the sunburst visualization.
     """
-
-    # CRITICAL FIX: Import inside the function to prevent startup crashes
-    from solution import generate_sunburst_html_in_memory
     
     data = request.get_json()
 
