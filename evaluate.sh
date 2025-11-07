@@ -98,8 +98,8 @@ gh pr create --base $MAIN_BRANCH --head embedding_similarity_tweak --title "Feat
 
 info "Two pull requests have been created."
 info "Please go to the GitHub repository to verify the CI pipeline comments on both pull requests."
-info "The 'location_match_tweak' PR should show lower performance."
-info "The 'embedding_similarity_tweak' PR should show higher performance."
+info "The 'location_match_tweak' PR should show higher performance."
+info "The 'embedding_similarity_tweak' PR should show lower performance."
 info "Once verified, merge the 'embedding_similarity_tweak' PR to trigger the CD workflow."
 echo "Press [Enter] to continue after merging the successful PR..."
 read -r _
