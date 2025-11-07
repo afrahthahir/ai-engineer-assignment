@@ -51,7 +51,6 @@ def create_embeddings(model, texts):
     embeddings = model.encode_multi_process(
         texts, 
         pool, 
-        convert_to_tensor=True,
         show_progress_bar=True
     )
     
