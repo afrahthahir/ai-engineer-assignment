@@ -1,0 +1,10 @@
+pandas
+numpy
+scikit-learn
+pytest
+networkx
+tqdm
+sentence_transformers
+pandas
+plotly
+Flask

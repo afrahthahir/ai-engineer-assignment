@@ -1,0 +1,148 @@
+# Workflow for comparing solutions on pull requests
+name: Compare Solutions on Pull Request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  compare-solutions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+        cache: 'pip'
+
+    - name: Install Python Dependencies
+      run: |
+        # Install 'bc' for floating-point math (required for speed comparison)
+        sudo apt-get update 
+        sudo apt-get install -y bc
+        pip install -r requirements.txt gunicorn
+
+    - name: Download Data
+      run: |
+        # TODO: Add command to download data from a public URL
+        # The necessary files (including ground_truth_managers.csv) are already committed 
+        # to the repository and are present after the initial 'Checkout repository' step.
+        
+        # We ensure the directory structure exists for safety:
+        mkdir -p data
+        echo "Data directory verified. Download step skipped as files are committed."
+
+    - name: Run PR Solution & Evaluate 
+      id: pr_eval
+      run: |
+        echo "Starting evaluation for PR code..."
+        
+        # 1. Running the solution script (e.g., python scripts/solution.py)
+        # We run it with 'time' but ignore the output calculation, focusing on submission.csv.
+        (time python scripts/solution.py > /dev/null) 2> time_output.txt
+        
+        # 2. Running the evaluation script (e.g., python dependencies/evaluate.py ...)
+        python dependencies/evaluate.py submission.csv data/ground_truth_managers.csv
+        
+        # 3. Parsing the accuracy from the evaluation output and setting it as an output variable
+        PR_ACCURACY_SCORE=$(cat accuracy.txt)
+        
+        # Setting the required output variable for the comparison step
+        echo "PR_ACCURACY=$PR_ACCURACY_SCORE" >> $GITHUB_OUTPUT
+        echo "PR accuracy: $PR_ACCURACY_SCORE"
+
+    - name: Checkout main branch
+      uses: actions/checkout@v4
+      with:
+        ref: main
+        path: main-branch-solution
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run Main Branch Solution & Evaluate
+      id: main_eval
+      run: |
+        # TODO: Add commands to run the solution script from the main branch and evaluate its performance
+        
+        # 1. Running the solution script from the main branch
+        python main-branch-solution/scripts/solution.py
+        
+        # Move the PR's submission file aside and rename the main branch's output
+        mv submission.csv main_submission.csv
+
+        # 2. Running the evaluation script for the main branch solution
+        python dependencies/evaluate.py main_submission.csv data/ground_truth_managers.csv
+        
+        # 3. Parsing the accuracy and setting the environment variable
+        MAIN_ACCURACY_SCORE=$(cat accuracy.txt)
+        
+        echo "MAIN_ACCURACY=$MAIN_ACCURACY_SCORE" >> $GITHUB_OUTPUT
+        echo "Main branch accuracy: $MAIN_ACCURACY_SCORE"
+
+    - name: Compare Performance
+      id: comparison
+      run: |
+        PR_ACCURACY=${{ steps.pr_eval.outputs.PR_ACCURACY }}
+        MAIN_ACCURACY=${{ steps.main_eval.outputs.MAIN_ACCURACY }}
+
+        # Parse the accuracy strings (e.g., "98.50%") to floats for comparison
+        PR_VAL=$(echo $PR_ACCURACY | sed 's/%//')
+        MAIN_VAL=$(echo $MAIN_ACCURACY | sed 's/%//')
+        
+        # TODO: Compare the accuracies of the PR and main branch solutions
+        # Check if the PR accuracy is greater than or equal to the main branch accuracy (no regression)
+        echo "Comparing PR Accuracy ($PR_ACCURACY) against Main Accuracy ($MAIN_ACCURACY)..."
+        
+        if (( $(echo "$PR_VAL >= $MAIN_VAL" | bc -l) )); then
+          # Set an environment variable (e.g., IS_BETTER) to "true"
+          echo "IS_BETTER=true" >> $GITHUB_OUTPUT
+        else
+          # Set an environment variable (e.g., IS_BETTER) to "false"
+          echo "IS_BETTER=false" >> $GITHUB_OUTPUT
+          exit 1 # Fail the build if accuracy dropped
+        fi
+
+    - name: Post PR Comment
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          // TODO: Construct a comment to post on the PR with the performance comparison results
+          const prAccuracy = "${{ steps.pr_eval.outputs.PR_ACCURACY }}";
+          const mainAccuracy = "${{ steps.main_eval.outputs.MAIN_ACCURACY }}";
+          const isBetter = "${{ steps.comparison.outputs.IS_BETTER }}";
+          
+          let statusEmoji = isBetter === 'true' ? '✅' : '❌';
+          let statusText = isBetter === 'true' ? 'PASSED (No Accuracy Drop)' : 'FAILED (Accuracy Regression)';
+          
+          const commentBody = `
+            ## Model Accuracy Check Results ${statusEmoji}
+            
+            | Branch | Accuracy | Status |
+            | :--- | :--- | :--- |
+            | **Pull Request** | **${prAccuracy}** | N/A |
+            | **Main Branch** | ${mainAccuracy} | N/A |
+            | **Comparison** | N/A | **${statusText}** |
+            
+            <br>
+            *The PR is merged only if its accuracy is equal to or greater than the main branch's accuracy.*
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });
