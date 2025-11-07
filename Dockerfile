@@ -20,6 +20,8 @@ COPY requirements.txt .
 # Install dependencies, including gunicorn for production serving
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
+# This prevents the server from crashing on the first request due to model download/load failure, by caching the model
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 # ----------------------------------------------------------------------
 # STAGE 2: Application Setup and Execution
 # ----------------------------------------------------------------------
