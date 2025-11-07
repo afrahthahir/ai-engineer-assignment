@@ -36,6 +36,9 @@ FROM python:3.10-slim-bullseye AS runner
 
 WORKDIR /app
 
+# Copy executable scripts (like 'gunicorn', 'pytest') to the PATH.
+COPY --from=builder /usr/local/bin /usr/local/bin
+
 # Copy installed Python site-packages from the builder stage
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
