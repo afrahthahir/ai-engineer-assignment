@@ -88,9 +88,9 @@ gh pr create --base $MAIN_BRANCH --head location_match_tweak --title "Feat: Twea
 
 info "Creating a branch with a performance INCREASE ('embedding_similarity_tweak')..."
 git checkout $MAIN_BRANCH
-sed -i 's/WEIGHT_LOCATION_MATCH = 1.0/WEIGHT_LOCATION_MATCH = 0.0/' scripts/solution.py # Revert previous change
+sed -i 's/WEIGHT_LOCATION_MATCH = 0.0/WEIGHT_LOCATION_MATCH = 5.0/' scripts/solution.py # Revert previous change
 git checkout -b embedding_similarity_tweak
-sed -i 's/WEIGHT_EMBEDDING_SIMILARITY = 1.0/WEIGHT_EMBEDDING_SIMILARITY = 2.0/' scripts/solution.py
+sed -i 's/WEIGHT_EMBEDDING_SIMILARITY = 1.0/WEIGHT_EMBEDDING_SIMILARITY = 0.0/' scripts/solution.py
 sed -i 's/WEIGHT_COMMON_NEIGHBORS = 1.0/WEIGHT_COMMON_NEIGHBORS = 2.0/' scripts/solution.py
 git commit -am "Tweak: Increase embedding and common neighbors weights"
 git push -f $REMOTE embedding_similarity_tweak
