@@ -12,10 +12,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 
 app = Flask(__name__)
 
-# NOTE: No global pre-loading required as this API handles dynamic data input.
-
-
-
 # --- API ROUTE (INSTANT RESPONSE) ---
 
 @app.route('/predict', methods=['POST'])
@@ -26,7 +22,7 @@ def predict():
     """
 
     # CRITICAL FIX: Import inside the function to prevent startup crashes
-    from scripts.solution import generate_sunburst_html_in_memory
+    from solution import generate_sunburst_html_in_memory
     
     data = request.get_json()
 
