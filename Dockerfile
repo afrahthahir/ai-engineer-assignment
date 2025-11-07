@@ -20,6 +20,9 @@ COPY requirements.txt .
 # Install dependencies, including gunicorn for production serving
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
+# --- STEP FOR ML MODEL CACHING ---
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 # ----------------------------------------------------------------------
 # STAGE 2: Application Setup and Execution
 # ----------------------------------------------------------------------
