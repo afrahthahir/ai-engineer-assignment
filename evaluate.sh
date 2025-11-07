@@ -84,7 +84,7 @@ git checkout -b location_match_tweak
 sed -i 's/WEIGHT_LOCATION_MATCH = 0.0/WEIGHT_LOCATION_MATCH = 1.0/' scripts/solution.py
 git commit -am "Tweak: Set WEIGHT_LOCATION_MATCH to 1.0"
 git push -f $REMOTE location_match_tweak
-gh pr create --base $MAIN_BRANCH --head location_match_tweak --title "Feat: Tweak location match weight" --body "This PR should result in lower accuracy."
+gh pr create --base $MAIN_BRANCH --head location_match_tweak --title "Feat: Tweak location match weight" --body "This PR should result in higher accuracy."
 
 info "Creating a branch with a performance INCREASE ('embedding_similarity_tweak')..."
 git checkout $MAIN_BRANCH
@@ -94,7 +94,7 @@ sed -i 's/WEIGHT_EMBEDDING_SIMILARITY = 1.0/WEIGHT_EMBEDDING_SIMILARITY = 0.0/' 
 sed -i 's/WEIGHT_COMMON_NEIGHBORS = 1.0/WEIGHT_COMMON_NEIGHBORS = 2.0/' scripts/solution.py
 git commit -am "Tweak: Increase embedding and common neighbors weights"
 git push -f $REMOTE embedding_similarity_tweak
-gh pr create --base $MAIN_BRANCH --head embedding_similarity_tweak --title "Feat: Tweak embedding similarity and common neighbors weights" --body "This PR should result in higher accuracy."
+gh pr create --base $MAIN_BRANCH --head embedding_similarity_tweak --title "Feat: Tweak embedding similarity and common neighbors weights" --body "This PR should result in lower accuracy."
 
 info "Two pull requests have been created."
 info "Please go to the GitHub repository to verify the CI pipeline comments on both pull requests."
