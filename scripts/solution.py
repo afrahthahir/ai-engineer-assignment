@@ -57,7 +57,7 @@ def create_embeddings(model, texts):
     # Stop the pool and join the processes
     model.stop_multi_process_pool(pool)
     
-    return embeddings.cpu().numpy()
+    return embeddings
 
 # --- 2. DATA LOADING ---
 def load_data(employees_path, connections_path):
